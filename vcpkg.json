@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "anim-event-logger",
+  "version-string": "1.0.0",
+  "port-version": 0,
+  "description": "A SKSE plugin for printing animation events to the console.",
+  "homepage": "https://www.skyrimng.com",
+  "license": "Apache-2.0",
+  "features": {
+    "plugin": {
+      "description": "Build the SKSE plugin.",
+      "dependencies": [
+        "boost-stl-interfaces",
+        "commonlibsse-ng",
+        "simpleini",
+        "tomlplusplus",
+        "rsm-binary-io"
+      ]
+    }
+  },
+  "default-features": ["plugin"]
+}
