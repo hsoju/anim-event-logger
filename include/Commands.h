@@ -22,9 +22,6 @@ namespace Anim
 		Commands& operator=(Commands&&) = delete;
 
 	private:
-		static void SetDynamicActor(RE::Actor* a_player);
-		static void SetDynamicSpell(RE::PlayerCharacter* a_player, bool a_leftHand);
-
 		static bool Exec(const RE::SCRIPT_PARAMETER* a_paramInfo, RE::SCRIPT_FUNCTION::ScriptData* a_scriptData, RE::TESObjectREFR* a_thisObj, RE::TESObjectREFR* a_containingObj, RE::Script* a_scriptObj, 
 			RE::ScriptLocals* a_locals, double& a_result, std::uint32_t& a_opcodeOffsetPtr);
 

@@ -33,7 +33,7 @@ namespace Anim
 		static inline RE::Actor* dynamicActor;
 		static inline RE::MagicItem* dynamicSpell;
 		static inline bool useAlternateSpell = false;
-
+		static inline uint32_t favoriteIdx = 0;
 
 		static void PrintEvent(const char* holder, const char* a_event);
 		static void CheckDynamicEvent(RE::BSAnimationGraphEvent& a_event);

@@ -49,35 +49,14 @@ namespace {
     void InitializeMessaging() {
         if (!GetMessagingInterface()->RegisterListener([](MessagingInterface::Message* message) {
                 switch (message->type) {
-                    // Skyrim lifecycle events.
-                    case MessagingInterface::kPostLoad:  // Called after all plugins have finished running
-                                                         // SKSEPlugin_Load. It is now safe to do multithreaded
-                                                         // operations, or operations against other plugins.
+                    case MessagingInterface::kPostLoad:
 						Anim::Events::GetSingleton()->tdmInterface = reinterpret_cast<TDM_API::IVTDM1*>(TDM_API::RequestPluginAPI(TDM_API::InterfaceVersion::V1));
 						if (Anim::Events::GetSingleton()->tdmInterface) {
 							Anim::Events::GetSingleton()->tdmLoaded = true;
 						}
 						break;
-                    case MessagingInterface::kPostPostLoad:  // Called after all kPostLoad message handlers have run.
-                    case MessagingInterface::kInputLoaded:   // Called when all game data has been found.
-                        break;
-                    case MessagingInterface::kDataLoaded:  // All ESM/ESL/ESP plugins have loaded, main menu is now
-                                                           // active.
-                        // It is now safe to access form data.
-                        InitializeHooking();
-                        break;
-
-                    // Skyrim game events.
-                    case MessagingInterface::kNewGame:      // Player starts a new game from main menu.
-                    case MessagingInterface::kPreLoadGame:  // Player selected a game to load, but it hasn't loaded yet.
-                                                            // Data will be the name of the loaded save.
-                    case MessagingInterface::kPostLoadGame:  // Player's selected save game has finished loading.
-                                                             // Data will be a boolean indicating whether the load was
-                                                             // successful.
-                    case MessagingInterface::kSaveGame:  // The player has saved a game.
-                                                         // Data will be the save name.
-                    case MessagingInterface::kDeleteGame:  // The player deleted a saved game from within the load menu.
-                        break;
+					default:
+						break;
                 }
             })) {
             SKSE::stl::report_and_fail("Unable to register message listener.");
@@ -112,6 +91,7 @@ extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::L
     SKSE::Init(skse);
 
     InitializeMessaging();
+	InitializeHooking();
 
     log::info("{} has finished loading.", plugin->GetName());
     return true;

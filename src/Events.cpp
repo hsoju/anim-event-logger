@@ -10,10 +10,17 @@ void Anim::Events::AddEventSink() {
 
 void Anim::Events::PrintEvent(const char* holder, const char* a_event) {
 	const auto log = RE::ConsoleLog::GetSingleton();
-	if (log) {
-		log->Print(a_event);
+	if (!showNames) {
+		if (log) {
+			log->Print(a_event);
+		}
+		logger::info("{}", a_event);
+	} else {
+		if (log) {
+			log->Print("%s: %s", holder, a_event);
+		}
+		logger::info("{}: {}", holder, a_event);
 	}
-	logger::info("{}", a_event);
 }
 
 void Anim::Events::CheckDynamicEvent(RE::BSAnimationGraphEvent& a_event) {
@@ -22,22 +29,24 @@ void Anim::Events::CheckDynamicEvent(RE::BSAnimationGraphEvent& a_event) {
 		if (actor == dynamicActor) {
 			auto caster = actor->GetMagicCaster(RE::MagicSystem::CastingSource::kInstant);
 			if (caster) {
-				logger::info("1");
 				if (!useAlternateSpell) {
-					logger::info("2");
 					caster->CastSpellImmediate(dynamicSpell, false, nullptr, 1.0f, false, 0.0f, actor);
 				} else {
-					logger::info("3");
-					auto left = actor->GetEquippedObject(true)->As<RE::MagicItem>();
-					if (left) {
-						logger::info("4");
-						caster->CastSpellImmediate(left, false, nullptr, 1.0f, false, 0.0f, actor);
+					auto left = actor->GetEquippedObject(true);
+					if (left && left->As<RE::MagicItem>()) {
+						caster->CastSpellImmediate(left->As<RE::MagicItem>(), false, nullptr, 1.0f, false, 0.0f, actor);
 					} else {
-						logger::info("5");
-						auto right = actor->GetEquippedObject(false)->As<RE::MagicItem>();
-						if (right) {
-							logger::info("6");
-							caster->CastSpellImmediate(right, false, nullptr, 1.0f, false, 0.0f, actor);
+						auto right = actor->GetEquippedObject(false);
+						if (right && right->As<RE::MagicItem>()) {
+							caster->CastSpellImmediate(right->As<RE::MagicItem>(), false, nullptr, 1.0f, false, 0.0f, actor);
+						} else {
+							const auto& favSpells = RE::MagicFavorites::GetSingleton()->spells;
+							uint32_t favSize = favSpells.size();
+							if (favSize > 0) {
+								auto spell = favSpells[favoriteIdx % favSize]->As<RE::MagicItem>();
+								caster->CastSpellImmediate(spell, false, nullptr, 1.0f, false, 0.0f, actor);
+								favoriteIdx += 1;
+							}
 						}
 					}
 				}
@@ -54,7 +63,7 @@ RE::BSEventNotifyControl Anim::Events::ProcessEvent(RE::BSTEventSink<RE::BSAnima
 				if (tdmLoaded) {
 					auto selected = tdmInterface->GetCurrentTarget();
 					if (!selected) {
-						 //PrintEvent("Player", a_event.tag.c_str());
+						 PrintEvent("Player", a_event.tag.c_str());
 					}
 				} else {
 					PrintEvent("Player", a_event.tag.c_str());
@@ -101,7 +110,7 @@ void Anim::Events::GetSettings()
 	CSimpleIniA ini;
 	ini.SetUnicode();
 	ini.LoadFile(L"Data\\SKSE\\Plugins\\AnimationEventLogger.ini");
-	enabled = ini.GetBoolValue("Global", "bEnabled", false);
+	enabled = ini.GetBoolValue("Global", "bAutoEnabled", false);
 	showNames = ini.GetBoolValue("Global", "bShowNames", false);
 	trackMount = ini.GetBoolValue("Global", "bTrackMount", false);
 }
