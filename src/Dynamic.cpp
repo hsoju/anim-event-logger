@@ -45,8 +45,13 @@ namespace Anim
 		GenerateNode(output, "AnimationEvent", a_event, true);
 		GenerateNode(output, "HasRaceFormID", "-1");
 		GenerateNode(output, "RaceEspName", "", true);
-		GenerateNode(output, "HasActorFormID", "-1");
-		GenerateNode(output, "ActorEspName", "", true);
+		if (Anim::Events::GetSingleton()->dynamicActor->IsPlayerRef()) {
+			GenerateNode(output, "HasActorFormID", "0x14");
+			GenerateNode(output, "ActorEspName", "Skyrim.esm", true);
+		} else {
+			GenerateNode(output, "HasActorFormID", "-1");
+			GenerateNode(output, "ActorEspName", "", true);
+		}
 		GenerateNode(output, "IsEquippedRightFormID", "-1");
 		GenerateNode(output, "IsEquippedLeftFormID", "-1");
 		GenerateNode(output, "HasWeaponType", "-1");
@@ -58,12 +63,12 @@ namespace Anim
 		if (a_spellID != nullptr) {
 			GenerateNode(output, "SpellFormIDs", a_spellID, false, true);
 		} else {
-			GenerateNode(output, "SpellFormIDs", "", false, true);
+			GenerateNode(output, "SpellFormIDs", "\"@OFFHAND\", \"@FAVOURITE\"", false, true);
 		}
 		if (a_spell_mod != nullptr) {
 			GenerateNode(output, "SpellEspName", a_spell_mod, true);
 		} else {
-			GenerateNode(output, "SpellEspName", "Skyrim.esm", true);
+			GenerateNode(output, "SpellEspName", "", true);
 		}
 		GenerateNode(output, "TargetCaster", "false");
 		GenerateNode(output, "HealthCost", "0.00");
@@ -99,10 +104,12 @@ namespace Anim
 		if (spell && spell->As<RE::MagicItem>()) {
 			a_events->dynamicSpell = spell->As<RE::MagicItem>();
 			const char* spellName = a_events->dynamicSpell->GetName();
+
 			std::string formID = fmt::format("{:x}", a_events->dynamicSpell->GetLocalFormID());
 			std::transform(formID.begin(), formID.end(), formID.begin(), [](unsigned char c) { return std::toupper(c); });
 			formID.insert(0, "0x");
 			const char* spellID = formID.c_str();
+			
 			const char* spellMod = a_events->dynamicSpell->GetDescriptionOwnerFile()->GetFilename().data();
 			if (c_log) {
 				c_log->Print("%s registered to %s", spellName, eventName);
@@ -137,10 +144,12 @@ namespace Anim
 				SetDynamicSpell(playerChar, false);
 			} else {
 				a_events->useAlternateSpell = true;
+				const char* eventName = a_events->dynamicEvent.c_str();
 				if (c_log) {
-					c_log->Print("Alternate spell registered to %s", a_events->dynamicEvent.c_str());
+					c_log->Print("Alternate spell registered to %s", eventName);
 				}
-				logger::info("Alternate spell registered to {}", a_events->dynamicEvent.c_str());
+				logger::info("Alternate spell registered to {}", eventName);
+				CopyDynamicSpell(GenerateDynamicSpell(eventName, nullptr, nullptr));
 			}
 		}
 	}
