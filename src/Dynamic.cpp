@@ -1,3 +1,8 @@
+#include <algorithm>
+#include <sstream>
+
+#include <toml++/toml.h>
+
 #include "Dynamic.h"
 #include "Events.h"
 
@@ -17,19 +22,66 @@ namespace Anim
 		}
 	}
 
-	void GenerateDynamicSpell() {
-
+	void Anim::Dynamic::GenerateNode(std::stringstream& a_stream, const char* a_key, const char* a_val, bool use_quotes, bool use_brackets) {
+		a_stream << a_key << " = ";
+		if (!use_quotes && !use_brackets) {
+			a_stream << a_val;
+		} else {
+			if (use_quotes) {
+				a_stream << "\"" << a_val << "\"";
+			} else {
+				if (use_brackets) {
+					a_stream << "[" << a_val << "]";
+				}
+			}
+		}
+		a_stream << "\n";
 	}
 
-	void CopyDynamicSpell() {
-		std::string okay("alright");
+	const std::string Anim::Dynamic::GenerateDynamicSpell(const char* a_event, const char* a_spellID, const char* a_spell_mod) {
+		auto config = toml::table();
+		std::stringstream output;
+		output << "[[event]]\n";
+		GenerateNode(output, "AnimationEvent", a_event, true);
+		GenerateNode(output, "HasRaceFormID", "-1");
+		GenerateNode(output, "RaceEspName", "", true);
+		GenerateNode(output, "HasActorFormID", "-1");
+		GenerateNode(output, "ActorEspName", "", true);
+		GenerateNode(output, "IsEquippedRightFormID", "-1");
+		GenerateNode(output, "IsEquippedLeftFormID", "-1");
+		GenerateNode(output, "HasWeaponType", "-1");
+		GenerateNode(output, "WeaponEspName", "", true);
+		GenerateNode(output, "HasEffectFormID", "-1");
+		GenerateNode(output, "EffectEspName", "", true);
+		GenerateNode(output, "HasKeywordFormID", "-1");
+		GenerateNode(output, "KeywordEspName", "", true);
+		if (a_spellID != nullptr) {
+			GenerateNode(output, "SpellFormIDs", a_spellID, false, true);
+		} else {
+			GenerateNode(output, "SpellFormIDs", "", false, true);
+		}
+		if (a_spell_mod != nullptr) {
+			GenerateNode(output, "SpellEspName", a_spell_mod, true);
+		} else {
+			GenerateNode(output, "SpellEspName", "Skyrim.esm", true);
+		}
+		GenerateNode(output, "TargetCaster", "false");
+		GenerateNode(output, "HealthCost", "0.00");
+		GenerateNode(output, "StaminaCost", "0.00");
+		GenerateNode(output, "MagickaCost", "0.00");
+		const std::string result = output.str();
+		output.clear();
+		return result;
+	}
+
+	void Anim::Dynamic::CopyDynamicSpell(const std::string& a_toml) {
 		OpenClipboard(nullptr);
 		EmptyClipboard();
-		HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, okay.size() + 1);
+		HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, a_toml.size() + 1);
 		if (!hg) {
 			CloseClipboard();
 		} else {
-			memcpy(GlobalLock(hg), okay.c_str(), okay.size() + 1);
+			memcpy(GlobalLock(hg), a_toml.c_str(), a_toml.size() + 1);
 			GlobalUnlock(hg);
 			SetClipboardData(CF_TEXT, hg);
 			CloseClipboard();
@@ -39,20 +91,29 @@ namespace Anim
 
 	void Anim::Dynamic::SetDynamicSpell(RE::PlayerCharacter* a_player, bool a_leftHand) {
 		auto a_events = Anim::Events::GetSingleton();
-		const auto c_log = RE::ConsoleLog::GetSingleton();
+		const char* eventName = a_events->dynamicEvent.c_str();
+		
+		const auto  c_log = RE::ConsoleLog::GetSingleton();
+
 		auto spell = a_player->GetEquippedObject(a_leftHand);
 		if (spell && spell->As<RE::MagicItem>()) {
 			a_events->dynamicSpell = spell->As<RE::MagicItem>();
+			const char* spellName = a_events->dynamicSpell->GetName();
+			std::string formID = fmt::format("{:x}", a_events->dynamicSpell->GetLocalFormID());
+			std::transform(formID.begin(), formID.end(), formID.begin(), [](unsigned char c) { return std::toupper(c); });
+			formID.insert(0, "0x");
+			const char* spellID = formID.c_str();
+			const char* spellMod = a_events->dynamicSpell->GetDescriptionOwnerFile()->GetFilename().data();
 			if (c_log) {
-				c_log->Print("%s registered to %s", a_events->dynamicSpell->GetName(), a_events->dynamicEvent.c_str());
+				c_log->Print("%s registered to %s", spellName, eventName);
 			}
-			logger::info("{} registered to {}", a_events->dynamicSpell->GetName(), a_events->dynamicEvent.c_str());
-			
+			logger::info("{} registered to {}", spellName, eventName);
+			CopyDynamicSpell(GenerateDynamicSpell(eventName, spellID, spellMod));
 		} else {
 			if (c_log) {
-				c_log->Print("Unable to register spell to %s", a_events->dynamicEvent.c_str());
+				c_log->Print("Unable to register spell to %s", eventName);
 			}
-			logger::info("Unable to register spell to {}", a_events->dynamicEvent.c_str());
+			logger::info("Unable to register spell to {}", eventName);
 		}
 	}
 

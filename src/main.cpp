@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include "TrueDirectionalMovementAPI.h"
+#include "Dynamic.h"
 #include "Events.h"
 #include "Hooks.h"
 
@@ -42,6 +43,14 @@ namespace {
         auto& trampoline = GetTrampoline();
         trampoline.create(14);
         log::trace("Trampoline initialized.");
+		//uint32_t formid = 0x5ECEE;
+		//auto spell = RE::TESDataHandler::GetSingleton()->LookupForm(formid, "Apocalypse - Magic of Skyrim.esp")->As<RE::SpellItem>();
+		//if (spell) {
+		//	auto var = fmt::format("0x{:x}", spell->GetLocalFormID());
+		//	logger::info("{}",var);
+		//} else {
+		//	logger::info("No dice");
+		//}
 		Anim::Events::GetSingleton()->GetSettings();
 		Hooks::Install();
     }
@@ -54,6 +63,10 @@ namespace {
 						if (Anim::Events::GetSingleton()->tdmInterface) {
 							Anim::Events::GetSingleton()->tdmLoaded = true;
 						}
+						//InitializeHooking();
+						break;
+					case MessagingInterface::kDataLoaded:
+						InitializeHooking();
 						break;
 					default:
 						break;
@@ -91,7 +104,6 @@ extern "C" [[maybe_unused]] DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::L
     SKSE::Init(skse);
 
     InitializeMessaging();
-	InitializeHooking();
 
     log::info("{} has finished loading.", plugin->GetName());
     return true;
